@@ -25,19 +25,12 @@ class CustomUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    # @transaction.atomic  # Ensures that the entire operation is atomic
-    # def get_or_create(self, **kwargs):
-    #     password = kwargs.pop("password", None)
-    #     try:
-    #         return self.get(**kwargs), False
-    #     except self.model.DoesNotExist:
-    #         return self.create_user(**kwargs, password=password), True
-
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
         return self.create_user(email, password, **extra_fields)
+
 
 class User(AbstractBaseUser, PermissionsMixin):
 
@@ -55,18 +48,22 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
     user_type = models.CharField(
         max_length=255, choices=USER_TYPES, blank=True, null=True
     )
     auth_provider = models.CharField(max_length=255, default=AUTH_PROVIDERS["email"])
-    is_active = models.BooleanField(default=False)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    is_active = models.BooleanField(
+        default=True
+    )  # we may use this to deactivate accounts of students who have graduated
     is_staff = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)  # This for email verification
+    is_approved = models.BooleanField(default=False)  # This is for admin approval
 
     objects = CustomUserManager()
 
     USERNAME_FIELD = "email"
-    # REQUIRED_FIELDS = []
 
     def __str__(self):
         return (
@@ -75,7 +72,9 @@ class User(AbstractBaseUser, PermissionsMixin):
             else self.email
         )
 
-    def generate_jwt_token(self):
+    def generate_jwt_token(
+        self,
+    ):  # I may decide to accept the expiry time as a parameter
         """
         Generates a JSON Web Token that stores user's information
         """
@@ -83,9 +82,11 @@ class User(AbstractBaseUser, PermissionsMixin):
             {
                 "id": self.pk,
                 "email": self.email,
-                "full_name": self.full_name,
+                "first_name": self.first_name,
+                "last_name": self.last_name,
                 "user_type": self.user_type,
-                "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24),
+                "exp": datetime.datetime.utcnow()
+                + datetime.timedelta(hours=1),  # Should I remove the expiry time?
             },
             settings.SECRET_KEY,
             algorithm="HS256",
@@ -102,6 +103,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             "access": str(refresh.access_token),
         }
 
+
 LEVEL_CHOICES = (
     ("100", "100"),
     ("200", "200"),
@@ -112,17 +114,34 @@ LEVEL_CHOICES = (
     ("700", "700"),
 )
 
+
 class UserProfile(models.Model):
     """
     Profile model for the three types of users fields specific to a user type
     are optional
     """
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    # student's fields
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+
+    class Meta:
+        abstract = True
+
+
+class StudentProfile(UserProfile):
     student_id = models.CharField(max_length=255, blank=True, null=True)
     faculty = models.CharField(max_length=250, blank=True, null=True)
     department = models.CharField(max_length=250, blank=True, null=True)
-    level = models.CharField(max_length=10, choices=LEVEL_CHOICES, blank=True, null=True)
+    matric_no = models.CharField(max_length=20, blank=True, null=True)
+    level = models.CharField(
+        max_length=10, choices=LEVEL_CHOICES, blank=True, null=True
+    )
     hall_of_residence = models.CharField(max_length=100, blank=True, null=True)
     room_no = models.CharField(max_length=10, blank=True, null=True)
-    verified = models.BooleanField(default=False)
+
+
+class TutorProfile(UserProfile):
+    pass
+
+
+class AdminProfile(UserProfile):
+    pass
