@@ -81,9 +81,6 @@ class StudentUserSerializer(serializers.ModelSerializer):
         return user
 
     def validate(self, data):
-        if data["user_type"] != "student":
-            raise serializers.ValidationError("User type must be 'student'.")
-
         # to make sure that the 'approved' field is only set to True by a staff
         if "is_approved" in data:
             request = self.context.get("request")
