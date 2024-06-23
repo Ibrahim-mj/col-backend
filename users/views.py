@@ -167,7 +167,7 @@ class ResendVerificationEmailView(generics.GenericAPIView):
         email = serializer.validated_data["email"]
         try:
             user = User.objects.get(email=email)
-            if user.is_active:
+            if user.is_verified:
                 return Response(
                     {
                         "success": False,
