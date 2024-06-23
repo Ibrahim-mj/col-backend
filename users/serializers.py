@@ -81,7 +81,7 @@ class StudentUserSerializer(serializers.ModelSerializer):
         return user
 
     def validate(self, data):
-        # to make sure that the 'approved' field is only set to True by a staff
+        # to make sure that the 'is_approved' field is only set to True by a staff
         if "is_approved" in data:
             request = self.context.get("request")
             if not request.user.is_staff:
