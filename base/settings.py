@@ -27,7 +27,7 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG")
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS')
+ALLOWED_HOSTS = [ ]
 
 
 # Application definition
@@ -136,11 +136,12 @@ AUTH_USER_MODEL = "users.User"
 
 # Email settings
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-DEFAULT_FROM_EMAIL = "Circle of Learning MSSNUI"
-EMAIL_HOST = "smtp.gmail.com"
+DEFAULT_FROM_EMAIL = "ibraheemabdulmojeed1@gmail.com"
+EMAIL_HOST = "smtp-relay.brevo.com"
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = True
 EMAIL_PORT = 587
 
 REST_FRAMEWORK = {

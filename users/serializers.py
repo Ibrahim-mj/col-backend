@@ -72,7 +72,7 @@ class StudentUserSerializer(serializers.ModelSerializer):
             "is_verified",
             "is_approved",
         )
-        read_only_fields = ("is_active", "is_staff", "user_type", "verified")
+        read_only_fields = ("is_active", "is_staff", "user_type", "is_verified")
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)

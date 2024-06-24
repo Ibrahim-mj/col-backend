@@ -79,20 +79,20 @@ class EmailThread(threading.Thread):
 
     def run(self):
         send_mail(
-            self.subject,
-            self.message,
-            self.html_message,
-            self.recipients,
+            subject=self.subject,
+            message=self.message,
+            from_email=f'Circle of Learning MSSNUI <{settings.DEFAULT_FROM_EMAIL}>',
+            html_message=self.html_message,
+            recipient_list=self.recipients,
             fail_silently=False,
         )
 
 
 def send_verification_email(verification_link, user) -> None:
     subject = "Circle of Learning, MSSNUI  - Verify your email"
-    message = f"Assalaamu 'alaykum {user.first_name},\n\nPlease verify your email by clicking on the link below:\n\n{verification_link}\n\n This link will expire in 24 hours.\n\nIf you did not register for an account, please ignore this email.\n\nBest regards,\nEcoVanguard Club"
-    html_message = f"<p>Assalaamu 'alaykum {user.first_name},</p><p>Your Account is successfully created. Please verify your email by clicking on the link below:</p><p><a href='{verification_link}'>Verify Email</a></p><p>This link will expire in 24 hours.</p><p>If you did not register for an account, please ignore this email.</p><p>Best regards,<br>EcoVanguard Club</p>"
+    message = f"Assalaamu 'alaykum {user.first_name},\n\nPlease verify your email by clicking on the link below:\n\n{verification_link}\n\n This link will expire in 24 hours.\n\nIf you did not register for an account, please ignore this email.\n\nBest regards,\COL MSSNUI"
+    html_message = f"<p>Assalaamu 'alaykum {user.first_name},</p><p>Your Account is successfully created. Please verify your email by clicking on the link below:</p><p><a href='{verification_link}'>Verify Email</a></p><p>This link will expire in 24 hours.</p><p>If you did not register for an account, please ignore this email.</p><p>Best regards,<br>COL MSSNUI</p>"
     recipients = [user.email]
-    print(message)  # TODO: remove this line
     EmailThread(subject, message, html_message, recipients).start()
 
 
