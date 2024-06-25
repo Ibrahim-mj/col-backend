@@ -49,8 +49,8 @@ class StudentUserSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(
         validators=[
             RegexValidator(
-                r"(^\+234\d{10}$)|(^(0[789]\d{9})$)x",
-                "Phone number must be a valid Nigerian number in the format: '+234xxxxxxxxxx'.",
+                r"^(\+?234|0)?[-.\s]?(\d{3})[-.\s]?(\d{3})[-.\s]?(\d{4})$",
+                "Invalid phone number. Please enter a valid Nigerian phone number in one of the following formats: '08012345678', '0812-345-6789', '+234-812-345-6789', '2348123456789', '+234 812 345 6789', '0812 345 6789'.",
             ),
         ],
         required=False,
@@ -112,8 +112,8 @@ class TutorUserSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(
         validators=[
             RegexValidator(
-                r"^\+234\d{10}$",
-                "Phone number must be a valid Nigerian number in the format: '+234xxxxxxxxxx'.",
+                r"^(\+?234|0)?[-.\s]?(\d{3})[-.\s]?(\d{3})[-.\s]?(\d{4})$",
+                "Invalid phone number. Please enter a valid Nigerian phone number in one of the following formats: '08012345678', '0812-345-6789', '+234-812-345-6789', '2348123456789', '+234 812 345 6789', '0812 345 6789'.",
             ),
         ],
         required=False,

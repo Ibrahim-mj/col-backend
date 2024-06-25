@@ -81,7 +81,7 @@ class EmailThread(threading.Thread):
         send_mail(
             subject=self.subject,
             message=self.message,
-            from_email=f'Circle of Learning MSSNUI <{settings.DEFAULT_FROM_EMAIL}>',
+            from_email=f"Circle of Learning MSSNUI <{settings.DEFAULT_FROM_EMAIL}>",
             html_message=self.html_message,
             recipient_list=self.recipients,
             fail_silently=False,

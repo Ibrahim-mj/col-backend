@@ -579,7 +579,7 @@ class PairTokenObtainView(TokenObtainPairView):
         # maybe restrict unapproved students from loging in too.
         # user_type = user.user_type
         # response.data["user_type"] = user_type # Is this necessary?
-        tokens =  {
+        tokens = {
             "success": True,
             "message": "Token obtained successfully.",
             "tokens": response.data,
@@ -600,6 +600,7 @@ class RefreshTokenView(TokenRefreshView):
             "tokens": response,
         }
         return Response(tokens, status=status.HTTP_200_OK)
+
 
 class GoogleSignInView(APIView):
     """
