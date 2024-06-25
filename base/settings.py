@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "drf_spectacular_sidecar",  # For the self-contained doc UI
+    'corsheaders',
     # My apps
     "users.apps.UsersConfig",
     # "announcements.apps.AnnouncementsConfig",
@@ -52,6 +53,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -179,3 +181,6 @@ AUTHLIB_OAUTH_CLIENTS = {
 VERIFY_EMAIL_REDIRECT_URL = config('VERIFY_EMAIL_REDIRECT_URL')
 RESET_PASSWORD_REDIRECT_URL = config('RESET_PASSWORD_REDIRECT_URL')
 GOOGLE_SIGNIN_REDIRECT_URL = config('GOOGLE_SIGNIN_REDIRECT_URL')
+
+# CORS SETTINGS
+CORS_ALLOW_ALL_ORIGINS = True
