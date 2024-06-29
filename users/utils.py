@@ -152,3 +152,33 @@ def send_tutor_account_created_email(user, validated_data):
         fail_silently=False,
         html_message=html_message,
     )
+
+def send_student_profile_creation_email(student_profile):
+    # How write a function to send an email to the student with his profile detaails when his profile is created?
+    html_message = f"""
+            <p>Dear {student_profile.user.first_name},</p>
+
+            <p>Assalaamu 'alaykum</p>
+
+            <p>Your student profile has been created successfully.</p>
+
+            <p>Your student ID is: {student_profile.student_id}</p>
+
+            <p>Regards,</p>
+            <p>Admin</p>
+            """
+    send_mail(
+        subject="Circle of Learning, MSSNUI - Student Profile Created",
+        message=(
+            f"Dear {student_profile.user.first_name},\n\n"
+            "Assalaamu 'alaykum \n\n"
+            "Your student profile has been created successfully.\n\n"
+            f"Your student ID is: {student_profile.student_id}\n\n"
+            "Regards,\n"
+            "Admin"
+        ),
+        from_email="Circle of Learning MSSNUI",
+        recipient_list=[student_profile.user.email],
+        fail_silently=False,
+        html_message=html_message,
+    )

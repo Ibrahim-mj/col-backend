@@ -1,7 +1,7 @@
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save
 
-from .models import User, StudentProfile, TutorProfile, AdminProfile
+from .models import User, StudentProfile, TutorProfile
 
 
 @receiver(post_save, sender=User)
@@ -11,9 +11,7 @@ def create_user_profile(sender, instance, created, **kwargs):
             StudentProfile.objects.create(user=instance)
         elif instance.user_type == "tutor":
             TutorProfile.objects.create(user=instance)
-        elif instance.user_type == "admin":
-            AdminProfile.objects.create(user=instance)
-
+            
 
 @receiver(pre_save, sender=StudentProfile)
 def generate_student_id(sender, instance, **kwargs):

@@ -6,8 +6,8 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework.exceptions import ValidationError, PermissionDenied
 
-from .models import User, StudentProfile, TutorProfile, AdminProfile
-from .utils import send_tutor_account_created_email
+from .models import User, StudentProfile, TutorProfile
+from .utils import send_tutor_account_created_email, send_student_profile_creation_email
 
 
 class UserSerializer(
@@ -170,13 +170,6 @@ class SetNewPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Passwords do not match.")
         return data
 
-
-class TutorAdminProfile(serializers.ModelSerializer):
-    class Meta:
-        model = TutorProfile
-        fields = ("user",)
-
-
 # Seperating the serializers for tutor and student profiles due to need for different fields
 
 
@@ -193,12 +186,21 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             "matric_no",
             "student_id",
         )
-        read_only_fields = ("student_id",)
+        read_only_fields = ("student_id", "user")
 
         def validate_matric_no(self, value):
             if len(value) != 6:
                 raise ValidationError("Matriculation number must be 6 characters long.")
             return value
+
+        def create(self, validated_date):
+            student = StudentProfile.objects.create(**validated_date)
+            # Set the user field to the logged in user
+            student.user = self.context["request"].user
+            student.student_id = f"COL/STU/{student.matric_no}"
+            student.save()
+            send_student_profile_creation_email(student)
+            return student
 
     # def to_representation(self, instance):
     #     data = super().to_representation(instance)

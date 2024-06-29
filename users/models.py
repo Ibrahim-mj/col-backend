@@ -38,7 +38,6 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
 
     USER_TYPES = (
-        ("admin", "Admin"),
         ("tutor", "Tutor"),
         ("student", "Student"),
     )
@@ -60,7 +59,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=True
     )  # we may use this to deactivate accounts of students who have graduated
     is_staff = models.BooleanField(default=False)
-    is_admin = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False) # Differentiate between normal tutor and an admin tutor
     is_verified = models.BooleanField(default=False)  # This for email verification
     is_approved = models.BooleanField(default=False)  # This is for admin approval
 
@@ -140,11 +139,8 @@ class StudentProfile(UserProfile):
     )
     hall_of_residence = models.CharField(max_length=100, blank=True, null=True)
     room_no = models.CharField(max_length=10, blank=True, null=True)
+    student_class = models.ForeignKey('core.Class', on_delete=models.SET_NULL, blank=True, null=True, related_name='students')
 
 
 class TutorProfile(UserProfile):
-    pass
-
-
-class AdminProfile(UserProfile):
     pass

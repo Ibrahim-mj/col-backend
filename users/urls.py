@@ -36,7 +36,12 @@ urlpatterns = [
         "tutors/<int:pk>/", views.StudentUserDetailView.as_view(), name="tutor-detail"
     ),
     path(
-        "student-profile/<str:pk>/",
+        "student-profile/",
+        views.StudentProfileView.as_view(),
+        name="student-profile",
+    ),
+    path(
+        "student-profile/<int:pk>/",
         views.StudentUserProfile.as_view(),
         name="student-profile",
     ),

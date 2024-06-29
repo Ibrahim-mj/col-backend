@@ -35,7 +35,7 @@ class ClassSerializer(serializers.ModelSerializer):
                         f"Student with ID {student_id} does not have a profile"
                     )
         return student_ids
-    
+
     def validate(self, attrs):
         # I should validate if the class tutor being submitted has is_staff=True
         student_ids = attrs.get("student_ids", None)
@@ -58,14 +58,14 @@ class ClassSerializer(serializers.ModelSerializer):
         instance.class_level = validated_data.get("class_level", instance.class_level)
         instance.save()
         return instance
-    
+
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         class_students = StudentProfile.objects.filter(student_class=instance)
         print(class_students)
         rep["students"] = [
             {
-                "id": student.user.id, #the user_id
+                "id": student.user.id,  # the user_id
                 "first_name": student.user.first_name,
                 "last_name": student.user.last_name,
                 "email": student.user.email,

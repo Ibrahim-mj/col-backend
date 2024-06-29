@@ -302,9 +302,6 @@ class TutorRegisterView(generics.CreateAPIView):
 class UserListView(generics.ListAPIView):
     """
     A view that lists all users: students, admin, or tutors.
-    Users can be filtered by user_type or is_approved.
-    Only users whose emails are verified are included in the list.
-
     Attributes:
         queryset (QuerySet): The queryset of User objects.
         serializer_class (Serializer): The serializer class for User objects.
@@ -312,14 +309,6 @@ class UserListView(generics.ListAPIView):
     Methods:
         get_queryset(): Returns the filtered queryset based on the provided filters.
         get(request, *args, **kwargs): Retrieves a list of users based on the provided filters.
-
-    Example:
-        To retrieve a list of all students:
-        GET /users/?user_type=student
-
-        To retrieve a list of all verified students:
-        GET /users/?is_approved=true
-
     """
 
     queryset = User.objects.all()
@@ -333,7 +322,7 @@ class UserListView(generics.ListAPIView):
             queryset = User.objects.filter(is_verified=True).filter(user_type=user_type)
         if is_approved is not None:
             queryset = queryset = User.objects.filter(is_verified=True).filter(
-                is_approved=True
+                is_approved=is_approved
             )
         else:
             queryset = User.objects.all()
@@ -342,6 +331,17 @@ class UserListView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         """
         Retrieve a list of users based on the provided filters.
+
+        Users can be filtered by user_type or is_approved.
+        Only users whose emails are verified are included in the list.
+
+
+        Example:
+        To retrieve a list of all students:
+        GET /all-users/?user_type=student
+
+        To retrieve a list of all verified students:
+        GET /all-users/?user_type=student&is_approved=true
 
         Returns:
             A response containing the list of users and a success message.
@@ -528,6 +528,55 @@ class TutorUserDetailView(generics.RetrieveUpdateDestroyAPIView):
         response = {"success": True, "message": "User deleted successfully."}
         return Response(response, status=status.HTTP_204_NO_CONTENT)
 
+class StudentProfileView(generics.ListCreateAPIView):
+    """
+    View for creating and listing student profiles.
+
+    This view allows administrators, tutors, or the owner of a student instance to create and list student profiles.
+
+    Methods:
+    - get: Retrieves a list of student profiles.
+    - post: Creates a new student profile.
+
+    """
+
+    serializer_class = StudentProfileSerializer
+    queryset = StudentProfile.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieves a list of student profiles.
+
+        Returns:
+            A response containing the list of student profiles and a success message.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        response = {
+            "success": True,
+            "message": "Student profiles retrieved successfully.",
+            "data": serializer.data,
+        }
+        return Response(response, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Creates a new student profile.
+
+        Returns:
+            A response indicating the success of the profile creation and a message.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        response = {
+            "success": True,
+            "message": "Student profile created successfully.",
+            "data": serializer.data,
+        }
+        return Response(response, status=status.HTTP_201_CREATED)
+
 
 class StudentUserProfile(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -536,24 +585,27 @@ class StudentUserProfile(generics.RetrieveUpdateDestroyAPIView):
     """
 
     serializer_class = StudentProfileSerializer
-    # queryset = UserProfile.objects.filter(user__user_type="student")
+    # queryset =     UserProfile.objects.filter(user__user_type="student")
     queryset = StudentProfile.objects.all()
     permission_classes = [IsStaffOrOwner]
 
     def get_object(self):
         user_id = self.kwargs.get("pk")
-        student_profile = get_object_or_404(StudentProfile, user__id=user_id)
+        print(f'user: {user_id}')
+        # student_profile = get_object_or_404(StudentProfile, user=user_id)
+        student_profile = StudentProfile.objects.get(user=user_id)
+        print(f'student_profile: {student_profile}')
         return student_profile
 
     def retrieve(self, request, *args, **kwargs):
         try:
             student_profile = self.get_object()
         except:
+            # print(student_profile)
             return Response(
                 {"success": False, "message": "User profile not found not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        print(student_profile)
         serializer = self.get_serializer(student_profile)
         response = {
             "success": True,
@@ -589,7 +641,14 @@ class PairTokenObtainView(TokenObtainPairView):
 
 class RefreshTokenView(TokenRefreshView):
     """
-    Custom refresh token view to include user_type in the response
+    A view for refreshing authentication tokens.
+
+    This view extends the `TokenRefreshView` class provided by the Django Rest Framework SimpleJWT library.
+    It handles the POST request to refresh an existing authentication token and returns a new token.
+
+    Methods:
+    - post: Handles the POST request to refresh the token and returns the new token.
+
     """
 
     def post(self, request, *args, **kwargs):
@@ -597,7 +656,7 @@ class RefreshTokenView(TokenRefreshView):
         tokens = {
             "success": True,
             "message": "Token obtained successfully.",
-            "tokens": response,
+            "tokens": response.data,
         }
         return Response(tokens, status=status.HTTP_200_OK)
 
@@ -657,18 +716,12 @@ class GoogleSignInCallbackView(APIView):
         user = User.objects.filter(email=profile["email"]).first()
         if user is not None:
             if user.auth_provider != User.AUTH_PROVIDERS["google"]:
-                return Response(
-                    {"success": False, "message": "You did not sign up with Google"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({{'success': False, 'message': 'You did not sign up with Google'}})}"
+                return HttpResponseRedirect(redirect_url)
             # maybe restrict unapproved students here too.
             tokens = user.get_tokens_for_user()
-            response = {
-                "success": True,
-                "message": "Login successful.",
-                "tokens": tokens,
-            }
-            return Response(response, status=status.HTTP_200_OK)
+            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Login successful.', 'tokens': tokens})}"
+            return HttpResponseRedirect(redirect_url)
         else:
             password = get_random_string(10)
             # How do I get the user's phone number from google bai?? E still dey fail
