@@ -148,7 +148,7 @@ EMAIL_PORT = config('EMAIL_PORT')
 REST_FRAMEWORK = {
     # YOUR SETTINGS
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "EXCEPTION_HANDLER": "users.utils.custom_exception_handler",
+    "EXCEPTION_HANDLER": "core.utils.custom_exception_handler",
 }
 
 SPECTACULAR_SETTINGS = {
