@@ -39,6 +39,7 @@ def custom_exception_handler(exc, context):
         }
     return response
 
+
 class EmailThread(threading.Thread):
     def __init__(self, subject: str, message: str, html_message: str, recipients: list):
         self.subject = subject

@@ -46,8 +46,10 @@ INSTALLED_APPS = [
     'corsheaders',
     # My apps
     "users.apps.UsersConfig",
-    # "announcements.apps.AnnouncementsConfig",
+    "announcements.apps.AnnouncementsConfig",
     "core.apps.CoreConfig",
+    "results.apps.ResultsConfig",
+    "courses.apps.CoursesConfig",
 ]
 
 MIDDLEWARE = [

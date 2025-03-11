@@ -3,8 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .serializers import ClassSerializer
-from .models import Class
+from .serializers import ClassSerializer, AcademicSessionSerializer
+from .models import Class, AcademicSession
 from .permissions import IsStaffUser
 
 
@@ -92,3 +92,82 @@ class ClassRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
             }
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
         return Response(response, status=status.HTTP_204_NO_CONTENT)
+
+
+class ListCreateAcademicSession(ListCreateAPIView):
+    """To create or list academic sessions"""
+
+    serializer_class = AcademicSessionSerializer
+    queryset = AcademicSession.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == status.HTTP_201_CREATED:
+            custom_resp = {
+                "success": True,
+                "message": "New Academic Session created successfully!",
+                "data": response.data,
+            }
+            return Response(custom_resp, status=status.HTTP_201_CREATED)
+        return response
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            custom_resp = {
+                "success": True,
+                "message": "Academic Sessions Retrieved Successfully",
+                "data": response.data,
+            }
+            return Response(custom_resp, status=status.HTTP_201_CREATED)
+        return response
+
+
+class RetrieveUpdateDestroyAcademicSession(RetrieveUpdateDestroyAPIView):
+
+    serializer_class = AcademicSessionSerializer
+    queryset = AcademicSession.objects.all()
+    
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            custom_resp = {
+                "success": True,
+                "message": "Academic Session Retrieved Successfully",
+                "data": response.data,
+            }
+            return Response(custom_resp, status=status.HTTP_200_OK)
+        return response
+
+    def put(self, request, *args, **kwargs):
+        response = super().put(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            custom_resp = {
+                "success": True,
+                "message": "Academic Session Updated Successfully",
+                "data": response.data,
+            }
+            return Response(custom_resp, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def patch(self, request, *args, **kwargs):
+        response = super().patch(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            custom_resp = {
+                "success": True,
+                "message": "Academic Session updated Successfully",
+                "data": response.data,
+            }
+            return Response(custom_resp, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            custom_resp = {
+                "success": True,
+                "message": "Academic Session deleted Successfully",
+                "data": response.data,
+            }
+            return Response(custom_resp, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)

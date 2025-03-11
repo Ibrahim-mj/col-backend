@@ -8,4 +8,14 @@ urlpatterns = [
         views.ClassRetrieveUpdateDestroyAPIView.as_view(),
         name="class-detail",
     ),
+    path(
+        "academic-sessions/",
+        views.ListCreateAcademicSession.as_view(),
+        name="list-create-academic-session",
+    ),
+    path(
+        "academic-sessions/<int:pk>/",
+        views.RetrieveUpdateDestroyAcademicSession.as_view(),
+        name="retieve-update-destroy-academi-session",
+    ),
 ]

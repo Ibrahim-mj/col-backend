@@ -1,10 +1,12 @@
 from django.contrib.auth import get_user_model
+from django.core.validators import RegexValidator
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueValidator
 
 from users.models import StudentProfile, TutorProfile
-from .models import Class
+from .models import Class, AcademicSession
 
 
 class ClassSerializer(serializers.ModelSerializer):
@@ -73,3 +75,39 @@ class ClassSerializer(serializers.ModelSerializer):
             for student in class_students
         ]
         return rep
+
+
+class AcademicSessionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for AcademicSession model
+    """
+
+    name = serializers.CharField(
+        validators=[
+            RegexValidator(
+                r"^\d{4}/\d{4}$",
+                message="Academic session must be in the format YYYY/YYYY",
+            ),
+            UniqueValidator(
+                queryset=AcademicSession.objects.all(),
+                message="Academic session already exists",
+            ),
+        ],
+        max_length=9,
+    )
+    is_active = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = AcademicSession
+        fields = ["id", "name", "is_active"]
+
+    def validate_name(self, value):
+        """
+        To check if the years in the name are consecutive
+        """
+        start_year, end_year = map(int, value.split("/"))
+        if end_year - start_year != 1:
+            raise serializers.ValidationError(
+                "Academic session must be consecutive years"
+            )
+        return value
