@@ -34,11 +34,24 @@ def decode_token(token):
 
 def send_verification_email(verification_link, user) -> None:
     subject = "Circle of Learning, MSSNUI  - Verify your email"
-    message = f"Assalaamu 'alaykum {user.first_name},\n\nPlease verify your email by clicking on the link below:\n\n{verification_link}\n\n This link will expire in 24 hours.\n\nIf you did not register for an account, please ignore this email.\n\nBest regards,\COL MSSNUI"
-    html_message = f"<p>Assalaamu 'alaykum {user.first_name},</p><p>Your Account is successfully created. Please verify your email by clicking on the link below:</p><p><a href='{verification_link}'>Verify Email</a></p><p>This link will expire in 24 hours.</p><p>If you did not register for an account, please ignore this email.</p><p>Best regards,<br>COL MSSNUI</p>"
+    message = (
+        f"Assalaamu 'alaykum {user.first_name},\n\n"
+        f"Please verify your email by clicking on the link below:\n\n"
+        f"{verification_link}\n\n"
+        f"This link will expire in 24 hours.\n\n"
+        f"If you did not register for an account, please ignore this email.\n\n"
+        f"Best regards,\nCOL MSSNUI"
+    )
+    html_message = (
+        f"<p>Assalaamu 'alaykum {user.first_name},</p>"
+        f"<p>Your Account is successfully created. Please verify your email by clicking on the link below:</p>"
+        f"<p><a href='{verification_link}'>Verify Email</a></p>"
+        f"<p>This link will expire in 24 hours.</p>"
+        f"<p>If you did not register for an account, please ignore this email.</p>"
+        f"<p>Best regards,<br>COL MSSNUI</p>"
+    )
     recipients = [user.email]
     EmailThread(subject, message, html_message, recipients).start()
-
 
 def send_verification(user, request) -> None:  # TODO: add error logging
     token = user.generate_jwt_token()
