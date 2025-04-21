@@ -40,7 +40,7 @@ class RegistrationPayment(BasePayment):
     pass  # No additional fields for now
 
 
-class Payment(models.Model):
+class Payment(BasePayment):
     """
     Model representing a payment.
     """

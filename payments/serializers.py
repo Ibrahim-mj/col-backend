@@ -13,7 +13,7 @@ class RegistrationPaymentSerializer(serializers.ModelSerializer):
         model = RegistrationPayment
         fields = [
             "id",
-            "paid_by",
+            "student",
             "amount",
             "reference",
             "status",
@@ -81,7 +81,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             read_only=True,
             default="pending",
         )
-        paid_by = serializers.PrimaryKeyRelatedField(
+        student = serializers.PrimaryKeyRelatedField(
             queryset=User.objects.all(),
             required=False,
             write_only=True,
@@ -101,7 +101,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         )
         fields = [
             "id",
-            "paid_by",
+            "student",
             "amount",
             "purpose",
             "reference",
