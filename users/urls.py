@@ -25,6 +25,11 @@ urlpatterns = [
         name="request-password-reset",
     ),
     path("reset-password/", views.ResetPasswordView.as_view(), name="reset-password"),
+    path(
+        "student-login/",
+        views.StudentLoginView.as_view(),
+        name="student-login",
+    ),
     path("register-tutor/", views.TutorRegisterView.as_view(), name="register-tutor"),
     path("all-users/", views.UserListView.as_view(), name="all-users"),
     path(
@@ -44,11 +49,6 @@ urlpatterns = [
         "student-profile/<int:pk>/",
         views.StudentUserProfile.as_view(),
         name="student-profile",
-    ),
-    path(
-        "obtain-token/",
-        views.PairTokenObtainView.as_view(),
-        name="obtain-token",
     ),
     path(
         "refresh-token/",

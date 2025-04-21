@@ -8,6 +8,7 @@ from rest_framework.exceptions import ValidationError, PermissionDenied
 
 from .models import User, StudentProfile, TutorProfile
 from .utils import send_tutor_account_created_email, send_student_profile_creation_email
+from .enums import UserTypes, AuthProviders
 
 
 class UserSerializer(
@@ -24,6 +25,7 @@ class UserSerializer(
             "user_permissions",
             "last_login",
         )
+
 
 
 class StudentUserSerializer(serializers.ModelSerializer):
@@ -49,14 +51,15 @@ class StudentUserSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(
         validators=[
             RegexValidator(
-                r"^(\+?234|0)?[-.\s]?(\d{3})[-.\s]?(\d{3})[-.\s]?(\d{4})$",
+                r"^(\+234|0)(7[0-9]|8[0-9]|9[0-9])[0-9]{8}$",
                 "Invalid phone number. Please enter a valid Nigerian phone number in one of the following formats: '08012345678', '0812-345-6789', '+234-812-345-6789', '2348123456789', '+234 812 345 6789', '0812 345 6789'.",
             ),
         ],
         required=False,
     )
     password = serializers.CharField(write_only=True)
-    # user_type = serializers.ChoiceField(choices=User.USER_TYPES, required=False)
+    user_type = serializers.ChoiceField(choices=UserTypes, default=UserTypes.STUDENT)
+    
 
     class Meta:
         model = User
@@ -76,7 +79,7 @@ class StudentUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
-        user.user_type = "student"
+        user.user_type = UserTypes.STUDENT
         user.save()
         return user
 
@@ -112,7 +115,7 @@ class TutorUserSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(
         validators=[
             RegexValidator(
-                r"^(\+?234|0)?[-.\s]?(\d{3})[-.\s]?(\d{3})[-.\s]?(\d{4})$",
+                r"^(\+234|0)(7[0-9]|8[0-9]|9[0-9])[0-9]{8}$",
                 "Invalid phone number. Please enter a valid Nigerian phone number in one of the following formats: '08012345678', '0812-345-6789', '+234-812-345-6789', '2348123456789', '+234 812 345 6789', '0812 345 6789'.",
             ),
         ],
@@ -137,7 +140,8 @@ class TutorUserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data["password"] = get_random_string(8)
         user = User.objects.create_user(**validated_data)
-        user.user_type = "tutor"
+        user.user_type = UserTypes.TUTOR
+        user.auth_provider = AuthProviders.EMAIL
         user.is_active = True
         user.is_staff = True
         user.verified = True

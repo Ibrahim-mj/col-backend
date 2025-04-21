@@ -14,6 +14,8 @@ from django.http import HttpRequest
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .enums import UserTypes, AuthProviders, LevelChoices
+
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -37,23 +39,13 @@ class CustomUserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
 
-    USER_TYPES = (
-        ("tutor", "Tutor"),
-        ("student", "Student"),
-    )
-
-    AUTH_PROVIDERS = {
-        "email": "email",
-        "google": "google",
-    }
-
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     user_type = models.CharField(
-        max_length=255, choices=USER_TYPES, blank=True, null=True
+        max_length=255, choices=UserTypes, default=UserTypes.STUDENT
     )
-    auth_provider = models.CharField(max_length=255, default=AUTH_PROVIDERS["email"])
+    auth_provider = models.CharField(max_length=255, choices=AuthProviders, default=AuthProviders.EMAIL)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     is_active = models.BooleanField(
         default=True
@@ -62,7 +54,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False) # Differentiate between normal tutor and an admin tutor
     is_verified = models.BooleanField(default=False)  # This for email verification
-    is_approved = models.BooleanField(default=False)  # This is for admin approval
+    is_approved = models.BooleanField(default=False)  # This is for admin approval for students
 
     objects = CustomUserManager()
 
@@ -107,16 +99,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         }
 
 
-LEVEL_CHOICES = (
-    ("100", "100"),
-    ("200", "200"),
-    ("300", "300"),
-    ("400", "400"),
-    ("500", "500"),
-    ("600", "600"),
-    ("700", "700"),
-)
-
 
 class UserProfile(models.Model):
     """
@@ -136,7 +118,7 @@ class StudentProfile(UserProfile):
     department = models.CharField(max_length=250, blank=True, null=True)
     matric_no = models.CharField(max_length=20, blank=True, null=True)
     level = models.CharField(
-        max_length=10, choices=LEVEL_CHOICES, blank=True, null=True
+        max_length=10, choices=LevelChoices, blank=True, null=True
     )
     hall_of_residence = models.CharField(max_length=100, blank=True, null=True)
     room_no = models.CharField(max_length=10, blank=True, null=True)

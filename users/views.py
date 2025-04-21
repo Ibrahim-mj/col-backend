@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.http import Http404
 from django.shortcuts import redirect, get_object_or_404
 from django.utils.crypto import get_random_string
+from django.db import transaction
 
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -31,7 +32,10 @@ from .serializers import (
     SetNewPasswordSerializer,
 )
 from .utils import oauth, decode_token, send_verification, send_reset_password
+from .enums import UserTypes, AuthProviders
 
+
+# =============Student Registration========================
 
 class StudentRegisterView(generics.CreateAPIView):
     """
@@ -52,6 +56,7 @@ class StudentRegisterView(generics.CreateAPIView):
 
     serializer_class = StudentUserSerializer
 
+    @transaction.atomic()
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -117,6 +122,7 @@ class AccountVerificationView(generics.RetrieveAPIView):
         except User.DoesNotExist:
             raise Http404("User does not exist.")
 
+    @transaction.atomic()
     def retrieve(self, request, *args, **kwargs):
         """
         Activates the user account
@@ -138,7 +144,7 @@ class AccountVerificationView(generics.RetrieveAPIView):
             user.is_verified = True
             user.save()
             user_data = self.serializer_class(user).data
-            url = f'{redirect_url}?{urlencode({"success": True, "message": "user verified successfully", "data": user_data, "tokens": user.get_tokens_for_user()})}'
+            url = f'{redirect_url}?{urlencode({"success": True, "message": "user verified successfully", "tokens": user.get_tokens_for_user()})}'
             return HttpResponseRedirect(url)
         except Exception as e:
             url = f"{redirect_url}?{urlencode({'success': False, 'message': 'An error occurred while verifying the user.', 'error': str(e) })}"
@@ -166,7 +172,17 @@ class ResendVerificationEmailView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"]
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.filter(email=email).first()
+
+            if not user:
+                return Response(
+                    {
+                        "success": True,
+                        "message": "You should receive a verification link if you provided a correct email.",
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
             if user.is_verified:
                 return Response(
                     {
@@ -177,13 +193,8 @@ class ResendVerificationEmailView(generics.GenericAPIView):
                 )
             send_verification(user, request)
             return Response(
-                {"success": True, "message": "Verification email has been sent."},
+                {"success": True, "message": "You should receive a verification link if you provided a correct email."},
                 status=status.HTTP_200_OK,
-            )
-        except User.DoesNotExist:
-            return Response(
-                {"success": False, "message": "User with that email does not exist."},
-                status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
             return Response(
@@ -221,7 +232,7 @@ class RequestPasswordResetView(generics.GenericAPIView):
         email = request.data.get("email")
         user = User.objects.filter(email=email).first()
         if user:
-            if user.auth_provider != User.AUTH_PROVIDERS["email"]:
+            if user.auth_provider != AuthProviders.EMAIL:
                 message = {
                     "success": False,
                     "message": "You did not sign up with email and password",
@@ -231,14 +242,14 @@ class RequestPasswordResetView(generics.GenericAPIView):
                 send_reset_password(user)
                 message = {
                     "success": True,
-                    "message": "A password reset link has been sent to your mail.",
+                    "message": "You should receive a password reset link if you provided a correct email.",
                 }
                 return Response(message, status=status.HTTP_200_OK)
 
         else:
             message = {
-                "success": False,
-                "message": "No active user with that email exists.",
+                "success": True,
+                "message": "You should receive a password reset link if you provided a correct email.",
             }
             return Response(message, status=status.HTTP_400_BAD_REQUEST)
 
@@ -253,6 +264,7 @@ class ResetPasswordView(generics.GenericAPIView):
 
     serializer_class = SetNewPasswordSerializer
 
+    @transaction.atomic()
     def patch(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -270,6 +282,139 @@ class ResetPasswordView(generics.GenericAPIView):
             return Response()
 
 
+# ==============Student Login=============
+
+class GoogleSignInView(APIView):
+    """
+    View for handling Google sign-in.
+
+    This view redirects the user to the Google sign-in page for authentication.
+
+    Methods:
+        - get: Handles the GET request and redirects the user to the Google sign-in page.
+    """
+
+    def get(self, request):
+        google = oauth.create_client("google")
+        redirect_url = request.build_absolute_uri(
+            reverse("users:google-signin-callback")
+        )
+        return google.authorize_redirect(request, redirect_url)
+
+
+class GoogleSignInCallbackView(APIView):
+    """
+    View for handling the Google sign-in callback.
+
+    This view is responsible for handling the callback from Google after a user has successfully signed in.
+    It retrieves the user's profile information from Google and performs the necessary actions based on whether
+    the user already exists or needs to be created.
+
+    If the user already exists, the view generates a new access token and refresh token for the user.
+    Else, it creates a new user account and redirects the user to the appropriate URL.
+
+    Methods:
+        - get: Handles the GET request for the Google sign-in callback.
+
+    """
+
+    def get(self, request):
+        """
+        Handles the GET request for the Google sign-in callback.
+
+        This method retrieves the access token from the request, fetches the user's profile information from Google,
+        and performs the necessary actions based on whether the user already exists or needs to be created.
+
+        Returns:
+            A response indicating the success or failure of the login or registration process.
+
+        """
+        token = oauth.google.authorize_access_token(request)
+        resp = oauth.google.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo", token=token
+        )
+        resp.raise_for_status()
+        profile = resp.json()
+
+        user = User.objects.filter(email=profile["email"]).first()
+        if user is not None:
+            if user.auth_provider != AuthProviders.GOOGLE:
+                redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({{'success': False, 'message': 'You did not sign up with Google'}})}"
+                return HttpResponseRedirect(redirect_url)
+            # maybe restrict unapproved students here too.
+            # tokens = user.get_tokens_for_user()
+            # redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Login successful.', 'tokens': tokens})}"
+            # return HttpResponseRedirect(redirect_url)
+        else:
+            password = get_random_string(10)
+            # How do I get the user's phone number from google bai?? E still dey fail
+            user = User.objects.create_user(
+                profile["email"],
+                password=password,
+                auth_provider=AuthProviders.GOOGLE,
+                user_type="student",
+                first_name=profile["given_name"],
+                last_name=profile["family_name"],
+                is_verified=True,
+            )
+            user.save()
+            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode(
+                {
+                    'success': True,
+                    'message': 'Registration Successful',
+                    'tokens': user.get_tokens_for_user()
+                }
+            )
+            }"
+            return HttpResponseRedirect(redirect_url)
+
+class StudentLoginView(TokenObtainPairView):
+    """
+    View to obtain both access and refresh tokens for a student.
+    """
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        user = User.objects.get(email=request.data["email"])
+        if user.user_type != UserTypes.STUDENT:
+            return Response(
+                {"success": False, "message": "You need a student account to login here."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if user.is_verified == False:
+            return Response(
+                {"success": False, "message": "Please verify your email to login."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if user.is_active == False:
+            return Response(
+                {"success": False, "message": "Your account has been deactivated."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if user.paid_reg == False:
+            return Response(
+                {"success": False, "message": "You need to pay your registration fee to login."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # if user.is_approved == False:
+        #     return Response(
+        #         {"success": False, "message": "Your account is not approved yet."},
+        #         status=status.HTTP_400_BAD_REQUEST,
+        #     )
+        
+        # maybe restrict unapproved students from loging in too.
+        # user_type = user.user_type
+        # response.data["user_type"] = user_type # Is this necessary?
+        tokens = {
+            "success": True,
+            "message": "Token obtained successfully.",
+            "tokens": response.data,
+        }
+        return Response(tokens, status=status.HTTP_200_OK)
+
+
+# =============Tutor Registration========================
 class TutorRegisterView(generics.CreateAPIView):
     """
     For the admin tutor to create accounts for a tutor.
@@ -288,6 +433,7 @@ class TutorRegisterView(generics.CreateAPIView):
     serializer_class = TutorUserSerializer
     permission_classes = [IsAdminUser]
 
+    @transaction.atomic()
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -297,6 +443,40 @@ class TutorRegisterView(generics.CreateAPIView):
             "message": "Tutor account created successfully. Ask the tutor to check their email for further instructions.",
         }
         return Response(response, status=status.HTTP_201_CREATED)
+
+
+# =============Tutor Login========================
+
+class TutorLoginView(TokenObtainPairView):
+    """
+    View to obtain both access and refresh tokens for a student.
+    """
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        user = User.objects.get(email=request.data["email"])
+        if user.user_type != UserTypes.TUTOR:
+            return Response(
+                {"success": False, "message": "You need a student account to login here."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        # if user.is_approved == False:
+        #     return Response(
+        #         {"success": False, "message": "Your account is not approved yet."},
+        #         status=status.HTTP_400_BAD_REQUEST,
+        #     )
+        
+        # maybe restrict unapproved students from loging in too.
+        # user_type = user.user_type
+        # response.data["user_type"] = user_type # Is this necessary?
+        tokens = {
+            "success": True,
+            "message": "Token obtained successfully.",
+            "tokens": response.data,
+        }
+        return Response(tokens, status=status.HTTP_200_OK)
+
 
 
 class UserListView(generics.ListAPIView):
@@ -615,29 +795,30 @@ class StudentUserProfile(generics.RetrieveUpdateDestroyAPIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-class PairTokenObtainView(TokenObtainPairView):
-    """
-    View to obtain both access and refresh tokens for a user.
-    """
+# class PairTokenObtainView(TokenObtainPairView):
+#     """
+#     View to obtain both access and refresh tokens for a user.
+#     """
 
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        user = User.objects.get(email=request.data["email"])
-        if user.is_verified == False:
-            return Response(
-                {"success": False, "message": "Please verify your email to login."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        # maybe restrict unapproved students from loging in too.
-        # user_type = user.user_type
-        # response.data["user_type"] = user_type # Is this necessary?
-        tokens = {
-            "success": True,
-            "message": "Token obtained successfully.",
-            "tokens": response.data,
-        }
-        return Response(tokens, status=status.HTTP_200_OK)
+#     def post(self, request, *args, **kwargs):
+#         response = super().post(request, *args, **kwargs)
+#         user = User.objects.get(email=request.data["email"])
+#         if user.is_verified == False:
+#             return Response(
+#                 {"success": False, "message": "Please verify your email to login."},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+#         # maybe restrict unapproved students from loging in too.
+#         # user_type = user.user_type
+#         # response.data["user_type"] = user_type # Is this necessary?
+#         tokens = {
+#             "success": True,
+#             "message": "Token obtained successfully.",
+#             "tokens": response.data,
+#         }
+#         return Response(tokens, status=status.HTTP_200_OK)
 
+# ============For All Users===================
 
 class RefreshTokenView(TokenRefreshView):
     """
@@ -659,93 +840,3 @@ class RefreshTokenView(TokenRefreshView):
             "tokens": response.data,
         }
         return Response(tokens, status=status.HTTP_200_OK)
-
-
-class GoogleSignInView(APIView):
-    """
-    View for handling Google sign-in.
-
-    This view redirects the user to the Google sign-in page for authentication.
-
-    Methods:
-        - get: Handles the GET request and redirects the user to the Google sign-in page.
-    """
-
-    def get(self, request):
-        google = oauth.create_client("google")
-        redirect_url = request.build_absolute_uri(
-            reverse("users:google-signin-callback")
-        )
-        return google.authorize_redirect(request, redirect_url)
-
-
-class GoogleSignInCallbackView(APIView):
-    """
-    View for handling the Google sign-in callback.
-
-    This view is responsible for handling the callback from Google after a user has successfully signed in.
-    It retrieves the user's profile information from Google and performs the necessary actions based on whether
-    the user already exists or needs to be created.
-
-    If the user already exists, the view generates a new access token and refresh token for the user.
-    Else, it creates a new user account and redirects the user to the appropriate URL.
-
-    Methods:
-        - get: Handles the GET request for the Google sign-in callback.
-
-    """
-
-    def get(self, request):
-        """
-        Handles the GET request for the Google sign-in callback.
-
-        This method retrieves the access token from the request, fetches the user's profile information from Google,
-        and performs the necessary actions based on whether the user already exists or needs to be created.
-
-        Returns:
-            A response indicating the success or failure of the login or registration process.
-
-        """
-        token = oauth.google.authorize_access_token(request)
-        resp = oauth.google.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo", token=token
-        )
-        resp.raise_for_status()
-        profile = resp.json()
-
-        user = User.objects.filter(email=profile["email"]).first()
-        if user is not None:
-            if user.auth_provider != User.AUTH_PROVIDERS["google"]:
-                redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({{'success': False, 'message': 'You did not sign up with Google'}})}"
-                return HttpResponseRedirect(redirect_url)
-            # maybe restrict unapproved students here too.
-            # tokens = user.get_tokens_for_user()
-            # redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Login successful.', 'tokens': tokens})}"
-            # return HttpResponseRedirect(redirect_url)
-        else:
-            password = get_random_string(10)
-            # How do I get the user's phone number from google bai?? E still dey fail
-            user = User.objects.create_user(
-                profile["email"],
-                password=password,
-                auth_provider=User.AUTH_PROVIDERS["google"],
-                user_type="student",
-                first_name=profile["given_name"],
-                last_name=profile["family_name"],
-                is_verified=True,
-            )
-            user.save()
-            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode(
-                {
-                    'success': True,
-                    'message': 'Registration Successful',
-                    'data': {
-                        'email': user.email,
-                        'first_name': user.first_name,
-                        'last_name': user.last_name
-                    }, 
-                    'tokens': user.get_tokens_for_user()
-                }
-            )
-            }"
-            return HttpResponseRedirect(redirect_url)
