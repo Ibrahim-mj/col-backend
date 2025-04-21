@@ -339,7 +339,7 @@ class GoogleSignInCallbackView(APIView):
         user = User.objects.filter(email=profile["email"]).first()
         if user is not None:
             if user.auth_provider != AuthProviders.GOOGLE:
-                redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({{'success': False, 'message': 'You did not sign up with Google'}})}"
+                redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': False, 'message': 'You did not sign up with Google'})}"
                 return HttpResponseRedirect(redirect_url)
             # maybe restrict unapproved students here too.
             # tokens = user.get_tokens_for_user()
