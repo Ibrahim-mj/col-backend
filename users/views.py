@@ -719,9 +719,9 @@ class GoogleSignInCallbackView(APIView):
                 redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({{'success': False, 'message': 'You did not sign up with Google'}})}"
                 return HttpResponseRedirect(redirect_url)
             # maybe restrict unapproved students here too.
-            tokens = user.get_tokens_for_user()
-            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Login successful.', 'tokens': tokens})}"
-            return HttpResponseRedirect(redirect_url)
+            # tokens = user.get_tokens_for_user()
+            # redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Login successful.', 'tokens': tokens})}"
+            # return HttpResponseRedirect(redirect_url)
         else:
             password = get_random_string(10)
             # How do I get the user's phone number from google bai?? E still dey fail
@@ -735,5 +735,17 @@ class GoogleSignInCallbackView(APIView):
                 is_verified=True,
             )
             user.save()
-            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Registration Successful', 'data': {'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name}, 'tokens': user.get_tokens_for_user()})}"
+            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode(
+                {
+                    'success': True,
+                    'message': 'Registration Successful',
+                    'data': {
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name
+                    }, 
+                    'tokens': user.get_tokens_for_user()
+                }
+            )
+            }"
             return HttpResponseRedirect(redirect_url)

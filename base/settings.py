@@ -25,9 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="").split(",")
 
 
 # Application definition
@@ -43,19 +43,20 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "drf_spectacular_sidecar",  # For the self-contained doc UI
-    'corsheaders',
+    "corsheaders",
     # My apps
     "users.apps.UsersConfig",
     "announcements.apps.AnnouncementsConfig",
     "core.apps.CoreConfig",
     "results.apps.ResultsConfig",
     "courses.apps.CoursesConfig",
+    "payments.apps.PaymentsConfig",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -139,13 +140,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "users.User"
 
 # Email settings
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
-EMAIL_HOST = config('EMAIL_HOST')
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-EMAIL_USE_TLS = config('EMAIL_USE_TLS')
-EMAIL_PORT = config('EMAIL_PORT')
+EMAIL_BACKEND = config(
+    "EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
+EMAIL_HOST = config("EMAIL_HOST")
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS")
+EMAIL_PORT = config("EMAIL_PORT")
 
 REST_FRAMEWORK = {
     # YOUR SETTINGS
@@ -163,26 +166,27 @@ SPECTACULAR_SETTINGS = {
 
 # AUTHLIB SETTINGS
 AUTHLIB_OAUTH_CLIENTS = {
-    'google': {
-        'client_id': config('GOOGLE_CLIENT_ID'),
-        'client_secret': config('GOOGLE_CLIENT_SECRET'),
-        'authorize_url': 'https://accounts.google.com/o/oauth2/auth',
-        'authorize_params': None,
-        'access_token_url': 'https://accounts.google.com/o/oauth2/token',
-        'access_token_params': None,
-        'refresh_token_url': None,
-        'client_kwargs': {
-            'scope': 'openid profile email',
-
+    "google": {
+        "client_id": config("GOOGLE_CLIENT_ID"),
+        "client_secret": config("GOOGLE_CLIENT_SECRET"),
+        "authorize_url": "https://accounts.google.com/o/oauth2/auth",
+        "authorize_params": None,
+        "access_token_url": "https://accounts.google.com/o/oauth2/token",
+        "access_token_params": None,
+        "refresh_token_url": None,
+        "client_kwargs": {
+            "scope": "openid profile email",
         },
-        'jwks_uri': 'https://www.googleapis.com/oauth2/v3/certs',
+        "jwks_uri": "https://www.googleapis.com/oauth2/v3/certs",
     }
 }
 
 # frontend settings
-VERIFY_EMAIL_REDIRECT_URL = config('VERIFY_EMAIL_REDIRECT_URL')
-RESET_PASSWORD_REDIRECT_URL = config('RESET_PASSWORD_REDIRECT_URL')
-GOOGLE_SIGNIN_REDIRECT_URL = config('GOOGLE_SIGNIN_REDIRECT_URL')
+VERIFY_EMAIL_REDIRECT_URL = config("VERIFY_EMAIL_REDIRECT_URL")
+RESET_PASSWORD_REDIRECT_URL = config("RESET_PASSWORD_REDIRECT_URL")
+GOOGLE_SIGNIN_REDIRECT_URL = config("GOOGLE_SIGNIN_REDIRECT_URL")
 
 # CORS SETTINGS
 CORS_ALLOW_ALL_ORIGINS = True
+
+PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY")

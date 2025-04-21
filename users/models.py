@@ -58,6 +58,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(
         default=True
     )  # we may use this to deactivate accounts of students who have graduated
+    paid_reg = models.BooleanField(default=False)  # This is for registration payment
     is_staff = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False) # Differentiate between normal tutor and an admin tutor
     is_verified = models.BooleanField(default=False)  # This for email verification
