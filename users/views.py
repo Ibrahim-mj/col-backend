@@ -358,13 +358,15 @@ class GoogleSignInCallbackView(APIView):
                 is_verified=True,
             )
             user.save()
-            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode( 
-                { 
+            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{
+                urlencode(
+                    { 
                     'success': True, 
                     'message': 'Registration Successful', 
                     'tokens': user.get_tokens_for_user() 
-                } 
-            )}"
+                }
+                )
+            }"
             return HttpResponseRedirect(redirect_url)
 
 class StudentLoginView(TokenObtainPairView):
