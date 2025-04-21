@@ -59,6 +59,15 @@ class StudentRegisterView(generics.CreateAPIView):
     @transaction.atomic()
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+        email = request.data.get("email")
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {
+                    "success": False,
+                    "message": "A user with this email already exists.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         send_verification(user, request)
