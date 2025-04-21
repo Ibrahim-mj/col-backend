@@ -29,6 +29,17 @@ class UserSerializer(
 
 
 class StudentUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message="A user with this email already exists.",
+            ),
+            EmailValidator(message="Invalid email address."),
+        ],
+        required=True,
+        allow_blank=False,
+    )
     first_name = serializers.CharField(
         validators=[
             RegexValidator(
