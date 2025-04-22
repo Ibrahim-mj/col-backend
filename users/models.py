@@ -48,7 +48,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     primary_auth_provider = models.CharField(
         max_length=255, choices=AuthProviders, default=AuthProviders.EMAIL
     )
-    linked_auth_provider = models.JSONField(
+    linked_auth_providers = models.JSONField(
         default=list, blank=True, null=True
     )
     phone_number = models.CharField(max_length=15, blank=True, null=True)
