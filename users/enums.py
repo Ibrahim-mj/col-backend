@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class UserTypes(models.TextChoices):
     ADMIN = "ADMIN", "Admin"
     TUTOR = "TUTOR", "Tutor"

@@ -22,6 +22,7 @@ oauth.register(
     jwks_uri=google_config["jwks_uri"],
 )
 
+
 def decode_token(token):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -52,6 +53,7 @@ def send_verification_email(verification_link, user) -> None:
     )
     recipients = [user.email]
     EmailThread(subject, message, html_message, recipients).start()
+
 
 def send_verification(user, request) -> None:  # TODO: add error logging
     token = user.generate_jwt_token()
@@ -109,6 +111,7 @@ def send_tutor_account_created_email(user, validated_data):
         fail_silently=False,
         html_message=html_message,
     )
+
 
 def send_student_profile_creation_email(student_profile):
     # How write a function to send an email to the student with his profile detaails when his profile is created?

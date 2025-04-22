@@ -4,7 +4,11 @@ from django.core.mail import send_mail
 
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from rest_framework.exceptions import ValidationError, PermissionDenied, AuthenticationFailed
+from rest_framework.exceptions import (
+    ValidationError,
+    PermissionDenied,
+    AuthenticationFailed,
+)
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -27,7 +31,6 @@ class UserSerializer(
             "user_permissions",
             "last_login",
         )
-
 
 
 class StudentUserSerializer(serializers.ModelSerializer):
@@ -72,7 +75,6 @@ class StudentUserSerializer(serializers.ModelSerializer):
     )
     password = serializers.CharField(write_only=True)
     user_type = serializers.ChoiceField(choices=UserTypes, default=UserTypes.STUDENT)
-    
 
     class Meta:
         model = User
@@ -187,6 +189,7 @@ class SetNewPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Passwords do not match.")
         return data
 
+
 # Separating the serializers for tutor and student profiles due to need for different fields
 
 
@@ -224,23 +227,24 @@ class StudentProfileSerializer(serializers.ModelSerializer):
     #     data['user'] = StudentUserSerializer(instance.user).data
     #     return data
 
+
 class TutorTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
 
-        user = self.user    
+        user = self.user
 
         if user.user_type != UserTypes.TUTOR:
-            raise ValidationError({
-                "success": False,
-                "message": "You need a tutor account to login here."
-            })
+            raise ValidationError(
+                {"success": False, "message": "You need a tutor account to login here."}
+            )
 
         return {
             "success": True,
             "message": "Token obtained successfully.",
             "tokens": data,
         }
+
 
 class StudentTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -249,23 +253,29 @@ class StudentTokenObtainPairSerializer(TokenObtainPairSerializer):
         user = self.user
 
         if user.user_type != UserTypes.STUDENT:
-            raise ValidationError({
-                "success": False,
-                "message": "You need a student account to login here."
-            })
-        
+            raise ValidationError(
+                {
+                    "success": False,
+                    "message": "You need a student account to login here.",
+                }
+            )
+
         if not user.is_verified:
-            raise ValidationError({
-                "success": False,
-                "message": "You need to verify your email address to login here."
-            })
-        
+            raise ValidationError(
+                {
+                    "success": False,
+                    "message": "You need to verify your email address to login here.",
+                }
+            )
+
         if not user.is_active:
-            raise ValidationError({
-                "success": False,
-                "message": "Your account is not active. Please contact support."
-            })
-        
+            raise ValidationError(
+                {
+                    "success": False,
+                    "message": "Your account is not active. Please contact support.",
+                }
+            )
+
         # if not user.is_approved:
         #     raise ValidationError({
         #         "success": False,
@@ -273,10 +283,12 @@ class StudentTokenObtainPairSerializer(TokenObtainPairSerializer):
         #     })
 
         if not user.paid_reg:
-            raise ValidationError({
-                "success": False,
-                "message": "You need to pay your registration fee to login here."
-            })
+            raise ValidationError(
+                {
+                    "success": False,
+                    "message": "You need to pay your registration fee to login here.",
+                }
+            )
 
         return {
             "success": True,

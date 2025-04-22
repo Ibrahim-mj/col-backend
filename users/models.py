@@ -45,16 +45,25 @@ class User(AbstractBaseUser, PermissionsMixin):
     user_type = models.CharField(
         max_length=255, choices=UserTypes, default=UserTypes.STUDENT
     )
-    auth_provider = models.CharField(max_length=255, choices=AuthProviders, default=AuthProviders.EMAIL)
+    primary_auth_provider = models.CharField(
+        max_length=255, choices=AuthProviders, default=AuthProviders.EMAIL
+    )
+    linked_auth_provider = models.JSONField(
+        default=list, blank=True, null=True
+    )
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     is_active = models.BooleanField(
         default=True
     )  # we may use this to deactivate accounts of students who have graduated
     paid_reg = models.BooleanField(default=False)  # This is for registration payment
     is_staff = models.BooleanField(default=False)
-    is_admin = models.BooleanField(default=False) # Differentiate between normal tutor and an admin tutor
+    is_admin = models.BooleanField(
+        default=False
+    )  # Differentiate between normal tutor and an admin tutor
     is_verified = models.BooleanField(default=False)  # This for email verification
-    is_approved = models.BooleanField(default=False)  # This is for admin approval for students
+    is_approved = models.BooleanField(
+        default=False
+    )  # This is for admin approval for students
 
     objects = CustomUserManager()
 
@@ -97,6 +106,19 @@ class User(AbstractBaseUser, PermissionsMixin):
             "refresh": str(refresh),
             "access": str(refresh.access_token),
         }
+    
+    def is_provider_linked(self, provider: str) -> bool:
+        return provider in (self.linked_auth_providers or [])
+    
+    @property
+    def all_linked_providers(self) -> list:
+        """Returns a list of all linked providers."""
+        return self.linked_auth_providers or []
+
+    @property
+    def primary_provider(self) -> str:
+        """Returns the first provider user signed up with."""
+        return self.auth_provider
 
 
 
@@ -117,12 +139,16 @@ class StudentProfile(UserProfile):
     faculty = models.CharField(max_length=250, blank=True, null=True)
     department = models.CharField(max_length=250, blank=True, null=True)
     matric_no = models.CharField(max_length=20, blank=True, null=True)
-    level = models.CharField(
-        max_length=10, choices=LevelChoices, blank=True, null=True
-    )
+    level = models.CharField(max_length=10, choices=LevelChoices, blank=True, null=True)
     hall_of_residence = models.CharField(max_length=100, blank=True, null=True)
     room_no = models.CharField(max_length=10, blank=True, null=True)
-    student_class = models.ForeignKey('core.Class', on_delete=models.SET_NULL, blank=True, null=True, related_name='students')
+    student_class = models.ForeignKey(
+        "core.Class",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="students",
+    )
 
 
 class TutorProfile(UserProfile):

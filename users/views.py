@@ -39,6 +39,7 @@ from .enums import UserTypes, AuthProviders
 
 # =============Student Registration========================
 
+
 class StudentRegisterView(generics.CreateAPIView):
     """
     For students to register accounts through email and password.
@@ -204,7 +205,10 @@ class ResendVerificationEmailView(generics.GenericAPIView):
                 )
             send_verification(user, request)
             return Response(
-                {"success": True, "message": "You should receive a verification link if you provided a correct email."},
+                {
+                    "success": True,
+                    "message": "You should receive a verification link if you provided a correct email.",
+                },
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
@@ -295,6 +299,7 @@ class ResetPasswordView(generics.GenericAPIView):
 
 # ==============Student Login=============
 
+
 class GoogleSignInView(APIView):
     """
     View for handling Google sign-in.
@@ -348,34 +353,48 @@ class GoogleSignInCallbackView(APIView):
         profile = resp.json()
 
         user = User.objects.filter(email=profile["email"]).first()
-        if user is not None:
-            if user.auth_provider != AuthProviders.GOOGLE:
-                redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': False, 'message': 'You did not sign up with Google'})}"
-                return HttpResponseRedirect(redirect_url)
-            # maybe restrict unapproved students here too.
-            # tokens = user.get_tokens_for_user()
-            # redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Login successful.', 'tokens': tokens})}"
-            # return HttpResponseRedirect(redirect_url)
+        if user:
+            if not user.is_provider_linked(AuthProviders.GOOGLE):
+                # Allow Account Linking
+                if user.primary_auth_provider == AuthProviders.EMAIL:
+                    linked_providers = set(user.all_linked_providers)
+                    linked_providers.add(AuthProviders.GOOGLE)
+                    user.linked_auth_providers = list(linked_providers)
+                    user.save(update_fields=["linked_auth_providers"])
+                else:
+                    # Not so need for now. I am only using google and email/password for now.
+                    # If they signed up with another provider (e.g., Facebook) and trying Google — disallow
+                    redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': False, 'message': 'You did not sign up with Google'})}"
+                    return HttpResponseRedirect(redirect_url)
+            
+            tokens = user.get_tokens_for_user()
+            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Login successful.', 'tokens': tokens})}"
+            return HttpResponseRedirect(redirect_url)
+        
         else:
+            # for a new user
             password = get_random_string(10)
-            # How do I get the user's phone number from google bai?? E still dey fail
             user = User.objects.create_user(
-                profile["email"],
+                email=profile["email"],
                 password=password,
                 auth_provider=AuthProviders.GOOGLE,
-                user_type="student",
+                linked_auth_providers=[AuthProviders.GOOGLE],
+                user_type=UserTypes.STUDENT,
                 first_name=profile["given_name"],
                 last_name=profile["family_name"],
                 is_verified=True,
             )
             user.save()
-            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Registration Successful', 'tokens': user.get_tokens_for_user()})}"
+            tokens = user.get_tokens_for_user()
+            redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Registration Successful', 'tokens': tokens})}"
             return HttpResponseRedirect(redirect_url)
+
 
 class StudentLoginView(TokenObtainPairView):
     """
     View to obtain both access and refresh tokens for a student.
     """
+
     serializer_class = StudentTokenObtainPairSerializer
 
 
@@ -412,15 +431,18 @@ class TutorRegisterView(generics.CreateAPIView):
 
 # =============Tutor Login========================
 
+
 class TutorLoginView(TokenObtainPairView):
     """
     View to obtain both access and refresh tokens for a student.
     """
+
     serializer_class = TutorTokenObtainPairSerializer
 
 
-
-class UserListView(generics.ListAPIView): # Is this really necessary? since there is an enpoint for each user type
+class UserListView(
+    generics.ListAPIView
+):  # Is this really necessary? since there is an enpoint for each user type
     """
     A view that lists all users: students, admin, or tutors.
     Attributes:
@@ -649,6 +671,7 @@ class TutorUserDetailView(generics.RetrieveUpdateDestroyAPIView):
         response = {"success": True, "message": "User deleted successfully."}
         return Response(response, status=status.HTTP_204_NO_CONTENT)
 
+
 class StudentProfileView(generics.ListCreateAPIView):
     """
     View for creating and listing student profiles.
@@ -712,10 +735,10 @@ class StudentUserProfile(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         user_id = self.kwargs.get("pk")
-        print(f'user: {user_id}')
+        print(f"user: {user_id}")
         # student_profile = get_object_or_404(StudentProfile, user=user_id)
         student_profile = StudentProfile.objects.get(user=user_id)
-        print(f'student_profile: {student_profile}')
+        print(f"student_profile: {student_profile}")
         return student_profile
 
     def retrieve(self, request, *args, **kwargs):
@@ -760,6 +783,7 @@ class StudentUserProfile(generics.RetrieveUpdateDestroyAPIView):
 #         return Response(tokens, status=status.HTTP_200_OK)
 
 # ============For All Users===================
+
 
 class RefreshTokenView(TokenRefreshView):
     """
