@@ -90,7 +90,7 @@ class User(AbstractBaseUser, PermissionsMixin):
                 "last_name": self.last_name,
                 "user_type": self.user_type,
                 "exp": datetime.datetime.utcnow()
-                + datetime.timedelta(hours=1),  # Should I remove the expiry time?
+                + datetime.timedelta(hours=24),  # Should I remove the expiry time?
             },
             settings.SECRET_KEY,
             algorithm="HS256",
