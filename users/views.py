@@ -30,6 +30,8 @@ from .serializers import (
     ResendVerificationEmailSerializer,
     PasswordResetSerializer,
     SetNewPasswordSerializer,
+    TutorTokenObtainPairSerializer,
+    StudentTokenObtainPairSerializer,
 )
 from .utils import oauth, decode_token, send_verification, send_reset_password
 from .enums import UserTypes, AuthProviders
@@ -374,46 +376,7 @@ class StudentLoginView(TokenObtainPairView):
     """
     View to obtain both access and refresh tokens for a student.
     """
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        user = User.objects.get(email=request.data["email"])
-        if user.user_type != UserTypes.STUDENT:
-            return Response(
-                {"success": False, "message": "You need a student account to login here."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if user.is_verified == False:
-            return Response(
-                {"success": False, "message": "Please verify your email to login."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if user.is_active == False:
-            return Response(
-                {"success": False, "message": "Your account has been deactivated."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if user.paid_reg == False:
-            return Response(
-                {"success": False, "message": "You need to pay your registration fee to login."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        
-        # if user.is_approved == False:
-        #     return Response(
-        #         {"success": False, "message": "Your account is not approved yet."},
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
-        
-        # maybe restrict unapproved students from loging in too.
-        # user_type = user.user_type
-        # response.data["user_type"] = user_type # Is this necessary?
-        tokens = {
-            "success": True,
-            "message": "Token obtained successfully.",
-            "tokens": response.data,
-        }
-        return Response(tokens, status=status.HTTP_200_OK)
+    serializer_class = StudentTokenObtainPairSerializer
 
 
 # =============Tutor Registration========================
@@ -453,35 +416,11 @@ class TutorLoginView(TokenObtainPairView):
     """
     View to obtain both access and refresh tokens for a student.
     """
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        user = User.objects.get(email=request.data["email"])
-        if user.user_type != UserTypes.TUTOR:
-            return Response(
-                {"success": False, "message": "You need a student account to login here."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        
-        # if user.is_approved == False:
-        #     return Response(
-        #         {"success": False, "message": "Your account is not approved yet."},
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
-        
-        # maybe restrict unapproved students from loging in too.
-        # user_type = user.user_type
-        # response.data["user_type"] = user_type # Is this necessary?
-        tokens = {
-            "success": True,
-            "message": "Token obtained successfully.",
-            "tokens": response.data,
-        }
-        return Response(tokens, status=status.HTTP_200_OK)
+    serializer_class = TutorTokenObtainPairSerializer
 
 
 
-class UserListView(generics.ListAPIView):
+class UserListView(generics.ListAPIView): # Is this really necessary? since there is an enpoint for each user type
     """
     A view that lists all users: students, admin, or tutors.
     Attributes:
@@ -573,7 +512,7 @@ class StudentUserDetailView(generics.RetrieveUpdateDestroyAPIView):
         response = {
             "success": True,
             "message": "User retrieved successfully.",
-            "data": serializer.data,  # TODO manage user data sent to the client
+            "data": serializer.data,  # TODO: manage user data sent to the client
         }
         return Response(response, status=status.HTTP_200_OK)
 

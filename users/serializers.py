@@ -4,7 +4,9 @@ from django.core.mail import send_mail
 
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.exceptions import ValidationError, PermissionDenied, AuthenticationFailed
+
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import User, StudentProfile, TutorProfile
 from .utils import send_tutor_account_created_email, send_student_profile_creation_email
@@ -185,7 +187,7 @@ class SetNewPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Passwords do not match.")
         return data
 
-# Seperating the serializers for tutor and student profiles due to need for different fields
+# Separating the serializers for tutor and student profiles due to need for different fields
 
 
 class StudentProfileSerializer(serializers.ModelSerializer):
@@ -221,3 +223,63 @@ class StudentProfileSerializer(serializers.ModelSerializer):
     #     data = super().to_representation(instance)
     #     data['user'] = StudentUserSerializer(instance.user).data
     #     return data
+
+class TutorTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        user = self.user    
+
+        if user.user_type != UserTypes.TUTOR:
+            raise ValidationError({
+                "success": False,
+                "message": "You need a tutor account to login here."
+            })
+
+        return {
+            "success": True,
+            "message": "Token obtained successfully.",
+            "tokens": data,
+        }
+
+class StudentTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        user = self.user
+
+        if user.user_type != UserTypes.STUDENT:
+            raise ValidationError({
+                "success": False,
+                "message": "You need a student account to login here."
+            })
+        
+        if not user.is_verified:
+            raise ValidationError({
+                "success": False,
+                "message": "You need to verify your email address to login here."
+            })
+        
+        if not user.is_active:
+            raise ValidationError({
+                "success": False,
+                "message": "Your account is not active. Please contact support."
+            })
+        
+        # if not user.is_approved:
+        #     raise ValidationError({
+        #         "success": False,
+        #         "message": "Your account is not approved. Please contact support."
+        #     })
+
+        if not user.paid_reg:
+            raise ValidationError({
+                "success": False,
+                "message": "You need to pay your registration fee to login here."
+            })
+
+        return {
+            "success": True,
+            "message": "Token obtained successfully.",
+            "tokens": data,
+        }
