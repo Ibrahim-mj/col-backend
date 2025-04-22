@@ -354,18 +354,13 @@ class GoogleSignInCallbackView(APIView):
 
         user = User.objects.filter(email=profile["email"]).first()
         if user:
-            if not user.is_provider_linked(AuthProviders.GOOGLE):
+            if not user.primary_auth_provider == AuthProviders.GOOGLE:
+                # User signed up with email and password, but trying to sign in with Google
                 # Allow Account Linking
-                if user.primary_auth_provider == AuthProviders.EMAIL:
-                    linked_providers = set(user.all_linked_providers)
-                    linked_providers.add(AuthProviders.GOOGLE)
-                    user.linked_auth_providers = list(linked_providers)
-                    user.save(update_fields=["linked_auth_providers"])
-                else:
-                    # Not so need for now. I am only using google and email/password for now.
-                    # If they signed up with another provider (e.g., Facebook) and trying Google — disallow
-                    redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': False, 'message': 'You did not sign up with Google'})}"
-                    return HttpResponseRedirect(redirect_url)
+                linked_providers = set(user.all_linked_providers)
+                linked_providers.add(AuthProviders.GOOGLE)
+                user.linked_auth_providers = list(linked_providers)
+                user.save(update_fields=["linked_auth_providers"])
             
             tokens = user.get_tokens_for_user()
             redirect_url = f"{settings.GOOGLE_SIGNIN_REDIRECT_URL}?{urlencode({'success': True, 'message': 'Login successful.', 'tokens': tokens})}"
