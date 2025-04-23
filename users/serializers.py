@@ -26,7 +26,8 @@ class UserSerializer(
         model = User
         exclude = (
             "password",
-            "auth_provider",
+            "primary_auth_provider",
+            "linked_auth_providers",
             "groups",
             "user_permissions",
             "last_login",
