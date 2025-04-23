@@ -26,7 +26,6 @@ def init_payment(email, amount, callback_url=None, for_reg=False, purpose=None):
             "amount": amount * 100,  # Paystack expects amount in kobo
             "currency": "NGN",
             "reference": reference,
-            "callback_url": f"https://{settings.FE_URL}/payment-success",
             "metadata": {
                 "purpose": "registration",
                 "custom_fields": [
