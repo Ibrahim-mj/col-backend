@@ -204,7 +204,6 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             "department",
             "level",
             "hall_of_residence",
-            "room_no",
             "matric_no",
             "student_id",
         )
