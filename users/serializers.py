@@ -209,6 +209,47 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             "student_id",
         )
         read_only_fields = ("student_id", "user")
+        extra_kwargs = {
+            "user": {
+                "required": True,
+                "allow_null": False,
+                "validators": [
+                    UniqueValidator(
+                        queryset=User.objects.all(),
+                        message="A student can not have multiple profiles.",
+                    )
+                ],
+            },
+            "matric_no": {
+                "required": True,
+                "allow_null": False,
+                "validators": [
+                    UniqueValidator(
+                        queryset=StudentProfile.objects.all(),
+                        message="A student with this matriculation number already exists.",
+                    )
+                ],
+            },
+            "faculty": {
+                "required": False,
+            },
+            "department": {
+                "required": False,
+            },
+            "level": {
+                "required": False,
+            },
+            "department": {
+                "required": False,
+            },
+            "hall_of_residence": {
+                "required": False,
+            },
+            "student_class": {
+                "required": False,
+            },
+            # TODO: Make sure only an admin can assign a student to a class.
+        }
 
         def validate_matric_no(self, value):
             if len(value) != 6:

@@ -141,7 +141,6 @@ class StudentProfile(UserProfile):
     matric_no = models.CharField(max_length=20, blank=True, null=True)
     level = models.CharField(max_length=10, choices=LevelChoices, blank=True, null=True)
     hall_of_residence = models.CharField(max_length=100, blank=True, null=True)
-    room_no = models.CharField(max_length=10, blank=True, null=True)
     student_class = models.ForeignKey(
         "core.Class",
         on_delete=models.SET_NULL,
