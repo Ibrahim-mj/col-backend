@@ -22,6 +22,7 @@ class RegistrationPaymentSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "paid_by", "paid_at"]
         extra_kwargs = {
             "reference": {"required": False},
+            "student": {"required": False},
             "status": {"required": False},
             "paid_at": {"required": False},
             "message": {"required": False},
