@@ -23,7 +23,7 @@ def init_payment(email, amount, callback_url=None, for_reg=False, purpose=None):
     if for_reg: # If the payment is for registration
         data = {
             "email": email,
-            "amount": amount * 100,  # Paystack expects amount in kobo
+            "amount": str(amount * 100),  # Paystack expects amount in kobo
             "currency": "NGN",
             "reference": reference,
             "metadata": {
