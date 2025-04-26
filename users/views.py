@@ -333,7 +333,7 @@ class GoogleSignInCallbackView(APIView):
         - get: Handles the GET request for the Google sign-in callback.
 
     """
-
+    @transaction.atomic()
     def get(self, request):
         """
         Handles the GET request for the Google sign-in callback.
@@ -345,12 +345,22 @@ class GoogleSignInCallbackView(APIView):
             A response indicating the success or failure of the login or registration process.
 
         """
-        token = oauth.google.authorize_access_token(request)
-        resp = oauth.google.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo", token=token
-        )
-        resp.raise_for_status()
-        profile = resp.json()
+        try:
+            token = oauth.google.authorize_access_token(request)
+            resp = oauth.google.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo", token=token
+            )
+            resp.raise_for_status()
+            profile = resp.json()
+        except Exception as e:
+            return Response(
+                {
+                    "success": False,
+                    "message": "An error occurred while fetching user profile from Google.",
+                    "error": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         user = User.objects.filter(email=profile["email"]).first()
         if user:
@@ -372,7 +382,7 @@ class GoogleSignInCallbackView(APIView):
             user = User.objects.create_user(
                 email=profile["email"],
                 password=password,
-                auth_provider=AuthProviders.GOOGLE,
+                primary_auth_provider=AuthProviders.GOOGLE,
                 linked_auth_providers=[AuthProviders.GOOGLE],
                 user_type=UserTypes.STUDENT,
                 first_name=profile["given_name"],
@@ -468,6 +478,7 @@ class StudentProfileView(generics.ListCreateAPIView):
         }
         return Response(response, status=status.HTTP_200_OK)
 
+    @transaction.atomic()
     def post(self, request, *args, **kwargs):
         """
         Creates a new student profile.
@@ -475,8 +486,36 @@ class StudentProfileView(generics.ListCreateAPIView):
         Returns:
             A response indicating the success of the profile creation and a message.
         """
-        serializer = self.get_serializer(data=request.data)
+        data = request.data
+        if not data.get("matric_no"):
+            return Response(
+                {
+                    "success": False,
+                    "message": "Matric number is required.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
+        user = request.user
+        if user.user_type != UserTypes.STUDENT:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Only students can create profiles.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if StudentProfile.objects.filter(user=user).exists():
+            return Response(
+                {
+                    "success": False,
+                    "message": "You already have a profile.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer.validated_data["user"] = user
+        serializer.validated_data["student_id"] = f"COL/STU/{data['matric_no']}"
         serializer.save()
         response = {
             "success": True,

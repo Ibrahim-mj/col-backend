@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+from datetime import timedelta
 from decouple import config
 
 from pathlib import Path
@@ -193,3 +194,8 @@ GOOGLE_SIGNIN_REDIRECT_URL = config("GOOGLE_SIGNIN_REDIRECT_URL")
 CORS_ALLOW_ALL_ORIGINS = True
 
 PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY")
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=3),
+}

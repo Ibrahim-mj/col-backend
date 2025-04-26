@@ -26,6 +26,7 @@ def format_drf_errors(errors):
 
     return formatted_errors
 
+# TODO: Reformat the errors to be consistent with the rest of the API
 
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)

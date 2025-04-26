@@ -256,8 +256,6 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             return value
 
         def create(self, validated_date):
-            validated_date["user"] = self.context["request"].user
-            # Create a new student profile
             student = StudentProfile.objects.create(**validated_date)
             # Set the user field to the logged in user
             student.student_id = f"COL/STU/{student.matric_no}"
