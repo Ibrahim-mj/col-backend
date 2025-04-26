@@ -210,7 +210,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ("student_id", "user")
         extra_kwargs = {
             "user": {
-                "required": True,
+                "required": False,
                 "allow_null": False,
                 "validators": [
                     UniqueValidator(
@@ -256,11 +256,12 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             return value
 
         def create(self, validated_date):
+            validated_date["user"] = self.context["request"].user
+            # Create a new student profile
             student = StudentProfile.objects.create(**validated_date)
             # Set the user field to the logged in user
-            student.user = self.context["request"].user
             student.student_id = f"COL/STU/{student.matric_no}"
-            student.save()
+            student.save(update_fields=["student_id"])
             send_student_profile_creation_email(student)
             return student
 

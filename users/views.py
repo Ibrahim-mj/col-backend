@@ -434,6 +434,93 @@ class TutorLoginView(TokenObtainPairView):
 
     serializer_class = TutorTokenObtainPairSerializer
 
+# ===============Student Profile========================
+
+class StudentProfileView(generics.ListCreateAPIView):
+    """
+    View for creating and listing student profiles.
+
+    This view allows administrators, tutors, or the owner of a student instance to create and list student profiles.
+
+    Methods:
+    - get: Retrieves a list of student profiles.
+    - post: Creates a new student profile.
+
+    """
+
+    serializer_class = StudentProfileSerializer
+    queryset = StudentProfile.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieves a list of student profiles.
+
+        Returns:
+            A response containing the list of student profiles and a success message.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        response = {
+            "success": True,
+            "message": "Student profiles retrieved successfully.",
+            "data": serializer.data,
+        }
+        return Response(response, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Creates a new student profile.
+
+        Returns:
+            A response indicating the success of the profile creation and a message.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        response = {
+            "success": True,
+            "message": "Student profile created successfully.",
+            "data": serializer.data,
+        }
+        return Response(response, status=status.HTTP_201_CREATED)
+
+
+class StudentUserProfile(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update or delete view for the student's profile
+    Can only be accessed by the staff or the owner
+    """
+
+    serializer_class = StudentProfileSerializer
+    # queryset =     UserProfile.objects.filter(user__user_type="student")
+    queryset = StudentProfile.objects.all()
+    permission_classes = [IsStaffOrOwner]
+
+    def get_object(self):
+        user_id = self.kwargs.get("pk")
+        print(f"user: {user_id}")
+        # student_profile = get_object_or_404(StudentProfile, user=user_id)
+        student_profile = StudentProfile.objects.get(user=user_id)
+        print(f"student_profile: {student_profile}")
+        return student_profile
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            student_profile = self.get_object()
+        except:
+            # print(student_profile)
+            return Response(
+                {"success": False, "message": "User profile not found not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = self.get_serializer(student_profile)
+        response = {
+            "success": True,
+            "message": "User profile retrieved successfully.",
+            "data": serializer.data,
+        }
+        return Response(response, status=status.HTTP_200_OK)
 
 class UserListView(
     generics.ListAPIView
@@ -666,92 +753,6 @@ class TutorUserDetailView(generics.RetrieveUpdateDestroyAPIView):
         response = {"success": True, "message": "User deleted successfully."}
         return Response(response, status=status.HTTP_204_NO_CONTENT)
 
-
-class StudentProfileView(generics.ListCreateAPIView):
-    """
-    View for creating and listing student profiles.
-
-    This view allows administrators, tutors, or the owner of a student instance to create and list student profiles.
-
-    Methods:
-    - get: Retrieves a list of student profiles.
-    - post: Creates a new student profile.
-
-    """
-
-    serializer_class = StudentProfileSerializer
-    queryset = StudentProfile.objects.all()
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        """
-        Retrieves a list of student profiles.
-
-        Returns:
-            A response containing the list of student profiles and a success message.
-        """
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        response = {
-            "success": True,
-            "message": "Student profiles retrieved successfully.",
-            "data": serializer.data,
-        }
-        return Response(response, status=status.HTTP_200_OK)
-
-    def post(self, request, *args, **kwargs):
-        """
-        Creates a new student profile.
-
-        Returns:
-            A response indicating the success of the profile creation and a message.
-        """
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        response = {
-            "success": True,
-            "message": "Student profile created successfully.",
-            "data": serializer.data,
-        }
-        return Response(response, status=status.HTTP_201_CREATED)
-
-
-class StudentUserProfile(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Retrieve, update or delete view for the student's profile
-    Can only be accessed by the staff or the owner
-    """
-
-    serializer_class = StudentProfileSerializer
-    # queryset =     UserProfile.objects.filter(user__user_type="student")
-    queryset = StudentProfile.objects.all()
-    permission_classes = [IsStaffOrOwner]
-
-    def get_object(self):
-        user_id = self.kwargs.get("pk")
-        print(f"user: {user_id}")
-        # student_profile = get_object_or_404(StudentProfile, user=user_id)
-        student_profile = StudentProfile.objects.get(user=user_id)
-        print(f"student_profile: {student_profile}")
-        return student_profile
-
-    def retrieve(self, request, *args, **kwargs):
-        try:
-            student_profile = self.get_object()
-        except:
-            # print(student_profile)
-            return Response(
-                {"success": False, "message": "User profile not found not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        serializer = self.get_serializer(student_profile)
-        response = {
-            "success": True,
-            "message": "User profile retrieved successfully.",
-            "data": serializer.data,
-        }
-        return Response(response, status=status.HTTP_200_OK)
 
 
 # class PairTokenObtainView(TokenObtainPairView):
