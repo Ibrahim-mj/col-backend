@@ -61,7 +61,10 @@ class StudentRegisterView(generics.CreateAPIView):
 
     @transaction.atomic()
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        data["user_type"] = UserTypes.STUDENT
+        data["auth_provider"] = AuthProviders.EMAIL
+        serializer = self.get_serializer(data=data)
         email = request.data.get("email")
         if User.objects.filter(email=email).exists():
             return Response(
